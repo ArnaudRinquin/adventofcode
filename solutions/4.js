@@ -1,17 +1,28 @@
 var getRawInput = require('./helpers').getRawInput;
 var assert = require('assert');
+var crypto = require('crypto');
 var prefix = getRawInput(4);
 
-var crypto = require('crypto');
-
-var FIVE_ZEROS = '00000';
-
-function startsWithFiveZeros(str) {
-  return str.indexOf(FIVE_ZEROS) === 0;
+function allStringIs(targetChart) {
+  return function(str) {
+    return str.split('').reduce(function(targetChart, stringChar){
+      return targetChart === stringChar ? targetChart : false;
+    }, targetChart);
+  }
 }
-assert(startsWithFiveZeros(FIVE_ZEROS));
-assert(startsWithFiveZeros(`${FIVE_ZEROS}foobar`));
-assert(!startsWithFiveZeros(`foobar${FIVE_ZEROS}`));
+assert(allStringIs('a')('aaaaaa'));
+assert(allStringIs('0')('000000'));
+assert(!allStringIs('0')('01000'));
+
+function startsWith(count, char) {
+    return function(str) {
+      return str.length >= count && allStringIs(char)(str.slice(0, count));
+    };
+}
+assert(startsWith(5, '0')('00000'));
+assert(startsWith(2, 'a')('aaaaaaaa'));
+assert(!startsWith(5, 'a')('aaa'));
+assert(!startsWith(5, 'a')('aabaaa'));
 
 function md5(str) {
   return crypto
@@ -19,27 +30,31 @@ function md5(str) {
     .update(str)
     .digest('hex');
 }
-assert(startsWithFiveZeros(md5('abcdef609043')));
-assert(startsWithFiveZeros(md5('pqrstuv1048970')));
-assert(!startsWithFiveZeros(md5('pqrstuv1048970' + 'foobar')));
+assert(startsWith(5, '0')(md5('abcdef609043')));
+assert(startsWith(5, '0')(md5('pqrstuv1048970')));
+assert(!startsWith(5, '0')(md5('pqrstuv1048970' + 'foobar')));
 
 function md5WithPrefix(prefix) {
     return function digest(str) {
       return md5(`${prefix}${str}`);
     }
 }
-assert(startsWithFiveZeros(md5WithPrefix('abcdef')(609043)));
-assert(!startsWithFiveZeros(md5WithPrefix('abcdef')(609043 + 1)));
+assert(startsWith(5, '0')(md5WithPrefix('abcdef')(609043)));
+assert(!startsWith(5, '0')(md5WithPrefix('abcdef')(609043 + 1)));
 
-function smallerStartingWithFiveZeros(prefix) {
+function smallerStartingWith(count, char, prefix) {
   var number = 0;
   var digest = md5WithPrefix(prefix);
-  while (!startsWithFiveZeros(digest(number))) {
+  while (!startsWith(count, char)(digest(number))) {
     number++;
   }
   return number;
 }
-assert.equal(smallerStartingWithFiveZeros('abcdef'), 609043);
-assert.equal(smallerStartingWithFiveZeros('pqrstuv'), 1048970);
+assert.equal(smallerStartingWith(5, '0', 'abcdef'), 609043);
+assert.equal(smallerStartingWith(5, '0', 'pqrstuv'), 1048970);
 
-console.log(smallerStartingWithFiveZeros(prefix))
+console.log([5, 6].reduce(function(result, charCount){
+  return Object.assign({}, result, {
+    [`with${charCount}Zeros`]: smallerStartingWith(charCount, '0', prefix)
+  })
+}, {}));
