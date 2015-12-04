@@ -1,6 +1,6 @@
 # adventofcode solutions
 
-My [adventofcode.com](adventofcode.com) solutions written in nodeJS.
+My [adventofcode.com](http://adventofcode.com) solutions written in nodeJS.
 
 All solutions are:
 
