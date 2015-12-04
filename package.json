@@ -1,0 +1,14 @@
+{
+  "name": "adventofcode",
+  "version": "0.0.0",
+  "description": "Solutions for my adventofcode.com 2015",
+  "private": "true",
+  "scripts": {
+    "test": "for i in $(seq 1 1); do echo $i:$(node solutions/$i) ; done"
+  },
+  "keywords": [
+    "adventofcode"
+  ],
+  "author": "Arnaud Rinquin",
+  "license": "MIT"
+}
