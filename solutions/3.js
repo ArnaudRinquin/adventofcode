@@ -3,7 +3,11 @@ var assert = require('assert');
 
 /* Map being this model:
 var map = {
-  currentPosition: [3, 4], // x, y
+  runners: [
+    [3, 4], // Santa x, y,
+    [4, 5], // Bot 1
+  ],
+  nextRunner: 0,
   visits: {
     '3-4': 1
   },
@@ -74,14 +78,32 @@ assert.deepEqual(
 
 function incrementVisitsOnMap(map) {
   return Object.assign({}, map, {
-    visits: incrementVisits(map.visits, map.currentPosition)
+    visits: incrementVisits(map.visits, map.runners[map.nextRunner]),
+    nextRunner: (map.nextRunner + 1) % map.runners.length
   });
 }
 
+function immutableUpdate(array, index, value) {
+  return array.slice(0, index)
+    .concat([value])
+    .concat(array.slice(index + 1))
+};
+
+var testArray = [0, 1, 2, 3, 4, 5];
+assert.deepEqual([10, 1, 2, 3 ,4, 5], immutableUpdate(testArray, 0, 10));
+assert.deepEqual([0, 1, 10, 3 ,4, 5], immutableUpdate(testArray, 2, 10));
+assert.deepEqual([0, 1, 2, 3 ,4, 10], immutableUpdate(testArray, 5, 10));
+assert.deepEqual([0, 1, 2, 3 ,4, 5, 10], immutableUpdate(testArray, 6, 10));
+assert.deepEqual([0, 1, 2, 3 ,4, 5, 10], immutableUpdate(testArray, 7, 10));
+
 function movePositionOnMap(map, direction) {
-  return Object.assign({}, map, {
-    currentPosition: moveFromPosition(map.currentPosition, direction)
+  var result = Object.assign({}, map, {
+    runners: immutableUpdate(
+      map.runners,
+      map.nextRunner,
+      moveFromPosition(map.runners[map.nextRunner], direction))
   });
+  return result;
 }
 
 function navigateOneStep(map, direction) {
@@ -89,25 +111,48 @@ function navigateOneStep(map, direction) {
 }
 
 assert.deepEqual({
-  currentPosition: [1, 6],
+  runners: [
+    [3, 6],
+    [9, 19],
+  ],
+  nextRunner: 0,
   visits: {
     '2-6': 1,
-    '1-6': 1
+    '9-20': 1,
+    '3-6': 1,
+    '9-19': 1
   }
 }, navigateOneStep(
-    navigateOneStep({
-      currentPosition: [2, 5],
-      visits: {}
-    }, '^')
-  , '<')
+    navigateOneStep(
+      navigateOneStep(
+        navigateOneStep({
+          runners: [
+            [2, 5],
+            [10, 20]
+          ],
+          nextRunner: 0,
+          visits: {}
+        }, '^')
+      , '<')
+    , '>')
+  , 'v')
 )
 
-function navigateAllSteps(steps) {
+function generateStartingPositions(runners) {
+  var positions = [];
+  for (var i = 0 ; i < runners; i++) {
+    positions[i] = [0, 0];
+  }
+  return positions;
+}
+
+function navigateAllSteps(steps, runnerCount) {
   return steps.reduce(navigateOneStep, {
-    currentPosition: [0, 0],
     visits: {
       '0-0': 1
     },
+    nextRunner: 0,
+    runners: generateStartingPositions(runnerCount),
   });
 }
 
@@ -119,4 +164,14 @@ assert.equal(countVisitedHouses(navigateAllSteps('>'.split(''), 1)), 2);
 assert.equal(countVisitedHouses(navigateAllSteps('^>v<'.split(''), 1)), 4);
 assert.equal(countVisitedHouses(navigateAllSteps('^v^v^v^v^v'.split(''), 1)), 2);
 
-console.log(countVisitedHouses(navigateAllSteps(getRawInput('3').split(''))));
+assert.equal(countVisitedHouses(navigateAllSteps('^v'.split(''), 2)), 3);
+assert.equal(countVisitedHouses(navigateAllSteps('^>v<'.split(''), 2)), 3);
+assert.equal(countVisitedHouses(navigateAllSteps('^v^v^v^v^v'.split(''), 2)), 11);
+
+var input = getRawInput(3).split('');
+
+console.log([1, 2].reduce(function(results, runnerCount){
+  return Object.assign({}, results, {
+    [`${runnerCount}-people`]: countVisitedHouses(navigateAllSteps(input, runnerCount))
+  });
+}, {}));
