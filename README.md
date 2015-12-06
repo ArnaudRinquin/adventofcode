@@ -15,5 +15,5 @@ Clone and run with:
 ```bash
 git clone git@github.com:ArnaudRinquin/adventofcode.git
 cd adventofcode
-npm test
+npm start
 ```
