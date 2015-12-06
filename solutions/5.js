@@ -13,26 +13,46 @@ function doesNotContainsBadWords(str) {
   return ! /ab|cd|pq|xy/.exec(str);
 };
 
-var ruleCheckers = [
+var firstRuleSet = [
   hasDoubledLetter,
   hasThreeVoyels,
   doesNotContainsBadWords,
 ];
 
-function isNice(str) {
-  return ruleCheckers.reduce(function(passed, ruleChecker){
-    return passed && ruleChecker(str);
-  }, true);
+function hasDoubledPair(str) {
+  return /(\w\w).*\1/.exec(str);
 }
 
-assert(isNice('ugknbfddgicrmopn'));
-assert(isNice('aaa'));
-assert(!isNice('jchzalrnumimnmhp'));
-assert(!isNice('haegwjzuvuyypxyu'));
-assert(!isNice('dvszwmarrgswjxmb'));
+function hasSandwich(str) {
+  return /(\w)\w\1/.exec(str);
+}
 
-function countNiceStrings(strings) {
-  return strings.map(isNice).reduce(function(niceStringsCount, stringIsNice){
+var secondRuleSet = [
+  hasDoubledPair,
+  hasSandwich,
+];
+
+function isNice(ruleCheckers) {
+  return function(str) {
+    return ruleCheckers.reduce(function(passed, ruleChecker){
+      return passed && ruleChecker(str);
+    }, true);
+  }
+}
+
+assert(isNice(firstRuleSet)('ugknbfddgicrmopn'));
+assert(isNice(firstRuleSet)('aaa'));
+assert(!isNice(firstRuleSet)('jchzalrnumimnmhp'));
+assert(!isNice(firstRuleSet)('haegwjzuvuyypxyu'));
+assert(!isNice(firstRuleSet)('dvszwmarrgswjxmb'));
+
+assert(isNice(secondRuleSet)('qjhvhtzxzqqjkmpb'));
+assert(isNice(secondRuleSet)('xxyxx'));
+assert(!isNice(secondRuleSet)('uurcxstgmygtbstg'));
+assert(!isNice(secondRuleSet)('ieodomkazucvgmuy'));
+
+function countNiceStrings(strings, ruleCheckers) {
+  return strings.map(isNice(ruleCheckers)).reduce(function(niceStringsCount, stringIsNice){
     return stringIsNice ? niceStringsCount + 1 : niceStringsCount;
   }, 0);
 }
@@ -43,8 +63,10 @@ assert.equal(countNiceStrings([
   'jchzalrnumimnmhp',
   'haegwjzuvuyypxyu',
   'dvszwmarrgswjxmb',
-]), 2);
+], firstRuleSet), 2);
 
+var input = getInputLines(5);
 console.log({
-  niceStringsCount: countNiceStrings(getInputLines(5)),
+  firstRuleSet: countNiceStrings(input, firstRuleSet),
+  secondRuleSet: countNiceStrings(input, secondRuleSet),
 })
