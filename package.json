@@ -4,11 +4,14 @@
   "description": "Solutions for my adventofcode.com 2015",
   "private": "true",
   "scripts": {
-    "start": "for i in $(seq 1 5); do echo $i:$(node solutions/$i) ; done"
+    "start": "for i in $(seq 1 6); do echo $i:$(node solutions/$i) ; done"
   },
   "keywords": [
     "adventofcode"
   ],
   "author": "Arnaud Rinquin",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "deep-freeze-node": "^1.1.1"
+  }
 }
