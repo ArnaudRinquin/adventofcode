@@ -95,11 +95,25 @@ assert.equal(switchLight(turnOn, false), true);
 assert.equal(switchLight(turnOff, true), false);
 assert.equal(switchLight(turnOff, false), false);
 
-function updateLine(instruction, begin, end, line) {
-  return mutationFreeArrayRangeUpdate(switchLight.bind(null, instruction), begin, end, line);
+function adjustBrightess(instruction, currentBrightness) {
+  switch (instruction) {
+    case toggle: return currentBrightness + 2;
+    case turnOn: return currentBrightness + 1;
+    case turnOff: return Math.max(0, currentBrightness - 1);
+  }
+}
+assert.equal(adjustBrightess(toggle, 0), 2);
+assert.equal(adjustBrightess(toggle, 2), 4);
+assert.equal(adjustBrightess(turnOn, 0), 1);
+assert.equal(adjustBrightess(turnOn, 2), 3);
+assert.equal(adjustBrightess(turnOff, 0), 0);
+assert.equal(adjustBrightess(turnOff, 1), 0);
+
+function updateLine(instruction, instructionImpl, begin, end, line) {
+  return mutationFreeArrayRangeUpdate(instructionImpl.bind(null, instruction), begin, end, line);
 }
 assert.deepEqual(
-  updateLine(toggle, 0, 5, deepFreeze([true, false, true, false, true, false])),
+  updateLine(toggle, switchLight, 0, 5, deepFreeze([true, false, true, false, true, false])),
   [false, true, false, true, false, true]
 );
 
@@ -119,9 +133,9 @@ assert.equal(smallSquareGrid[2][2], true);
 assert.equal(smallSquareGrid[3], undefined);
 assert.equal(smallSquareGrid[2][3], undefined);
 
-function updateGrid(instruction, begin, end, grid) {
+function updateGrid(instruction, instructionImpl, begin, end, grid) {
   return mutationFreeArrayRangeUpdate(
-    updateLine.bind(null, instruction, begin.column, end.column),
+    updateLine.bind(null, instruction, instructionImpl, begin.column, end.column),
     begin.row,
     end.row,
     grid
@@ -129,7 +143,7 @@ function updateGrid(instruction, begin, end, grid) {
 }
 
 assert.deepEqual(
-  updateGrid(turnOff, {row: 1, column: 1}, {row: 2, column: 2}, smallSquareGrid),
+  updateGrid(turnOff, switchLight, {row: 1, column: 1}, {row: 2, column: 2}, smallSquareGrid),
   [
     [true, true, true],
     [true, false, false],
@@ -137,13 +151,13 @@ assert.deepEqual(
   ]
 );
 
-function followInstructionString(grid, instructionString) {
+function followInstructionString(instructionImpl, grid, instructionString) {
   var details = parseInstruction(instructionString);
-  return updateGrid(details.instruction, details.begin, details.end, grid);
+  return updateGrid(details.instruction, instructionImpl, details.begin, details.end, grid);
 }
 
 assert.deepEqual(
-  followInstructionString(smallSquareGrid, 'toggle 0,0 through 1,2'),
+  followInstructionString(switchLight, smallSquareGrid, 'toggle 0,0 through 1,2'),
   [
     [false, false, false],
     [false, false, false],
@@ -165,7 +179,21 @@ function countLightsOn(grid) {
 assert.equal(countLightsOn([[]]), 0);
 assert.equal(countLightsOn([[false, true], [true, false]]), 2);
 
-var input = getInputLines(6);
-var thousandByThousandGrid = deepFreeze(generateSquareGrid(1000, false));
+function countBrightness(grid) {
+  return grid.reduce(function(gridTotal, line) {
+    return gridTotal + line.reduce(function(lineTotal, brightness) {
+        return lineTotal + brightness;
+    }, 0);
+  }, 0);
+}
+assert.equal(countBrightness([[0]]), 0);
+assert.equal(countBrightness([[0, 1], [2, 3]]), 6);
 
-console.log(countLightsOn(input.reduce(followInstructionString, thousandByThousandGrid)));
+var input = getInputLines(6);
+var thousandByThousandGridBoolean = deepFreeze(generateSquareGrid(1000, false));
+var thousandByThousandGridNatural = deepFreeze(generateSquareGrid(1000, 0));
+
+console.log({
+  onOff: countLightsOn(input.reduce(followInstructionString.bind(null, switchLight), thousandByThousandGridBoolean)),
+  brightness: countBrightness(input.reduce(followInstructionString.bind(null, adjustBrightess), thousandByThousandGridNatural)),
+});
