@@ -8,6 +8,7 @@ module.exports = {
   parseNumbersFromFile(path) {
     return module.exports
       .readLinesFromFile(path)
+      .filter(Boolean)
       .map((str) => parseInt(str, 10));
   },
 };
